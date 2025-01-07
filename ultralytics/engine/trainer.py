@@ -405,6 +405,13 @@ class BaseTrainer:
                 # Log
                 if RANK in {-1, 0}:
                     loss_length = self.tloss.shape[0] if len(self.tloss.shape) else 1
+                    custom_metrics = {
+                        "loss": self.tloss.mean().item() if self.tloss is not None else 0,
+                        "lr": self.optimizer.param_groups[0]["lr"],
+                        "batch_size": batch["cls"].shape[0],
+                        "img_size": batch["img"].shape[-1],
+                    }
+                    
                     pbar.set_description(
                         ("%11s" * 2 + "%11.4g" * (2 + loss_length))
                         % (
@@ -415,6 +422,11 @@ class BaseTrainer:
                             batch["img"].shape[-1],  # imgsz, i.e 640
                         )
                     )
+
+                    if (i) == nb-1:
+                        str_save = ("\n" + "%11s" * (4 + len(self.loss_names))) %(f"{epoch + 1}/{self.epochs}", f"{self._get_memory():.3g}G", np.round(custom_metrics['loss'],3),custom_metrics['batch_size'],custom_metrics['img_size'])
+                        # LOGGER.info(f"Metrics at epoch {epoch + 1}, batch {i}: {custom_metrics}")
+                        LOGGER.info(str_save)
                     self.run_callbacks("on_batch_end")
                     if self.args.plots and ni in self.plot_idx:
                         self.plot_training_samples(batch, ni)
